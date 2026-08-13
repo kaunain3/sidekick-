@@ -95,6 +95,3 @@ Please read this before using the agent on anything you care about:
 
 Issues and pull requests are welcome. If you extend the sandbox, please keep the security notes above up to date.
 
-## License
-
-Add a license of your choice (MIT is a common default for small tooling like this).
