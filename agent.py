@@ -104,6 +104,36 @@ TOOLS = [
             "additionalProperties": False,
         },
     },
+    {
+        "type": "function",
+        "name": "search_files",
+        "description": (
+            "Search for a text pattern (case-insensitive) across files in a"
+            " directory, optionally filtered by a filename glob pattern."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "The directory to search in.",
+                },
+                "pattern": {
+                    "type": "string",
+                    "description": "The text pattern to search for.",
+                },
+                "file_pattern": {
+                    "type": "string",
+                    "description": (
+                        "Optional filename glob to filter which files are"
+                        " searched, e.g. '*.py'."
+                    ),
+                },
+            },
+            "required": ["path", "pattern"],
+            "additionalProperties": False,
+        },
+    },
 ]
 
 
@@ -213,8 +243,14 @@ def execute_tool(tool_name: str, tool_input: dict) -> str:
     elif tool_name == "list_files":
       return list_files(tool_input.get("path", "."))
     elif tool_name == "run_command":
-      # Fixed variable name from 'arguments' to 'tool_input'
+      
       return run_command(tool_input["command"])
+    elif tool_name == "search_files":
+      return search_files(
+          tool_input["path"],
+          tool_input["pattern"],
+          tool_input.get("file_pattern"),
+      )
     else:
       return f"Error: Unknown tool: {tool_name}"
   except Exception as e:
@@ -225,11 +261,11 @@ def run_agent(user_message: str, conversation_history: list = None) -> None:
   if conversation_history is None:
     conversation_history = []
 
-  # Add the user's message to the conversation
+  
   conversation_history.append({"role": "user", "content": user_message})
 
   while True:
-    # Ask the model what to do next
+   
     response = client.responses.create(
         model=MODEL,
         instructions=SYSTEM_PROMPT,
@@ -237,26 +273,26 @@ def run_agent(user_message: str, conversation_history: list = None) -> None:
         tools=TOOLS,
     )
 
-    # Add the model's response to the conversation
+    
     conversation_history.extend(response.output)
 
-    # Find all tool calls made by the model
+    
     tool_calls = [
         item for item in response.output if item.type == "function_call"
     ]
 
-    # If there are no tool calls, the model is finished
+    
     if not tool_calls:
       print(response.output_text)
       return
 
-    # Execute every tool requested by the model
+    
     for tool_call in tool_calls:
       print(f"\nUsing tool: {tool_call.name}")
 
       result = execute_tool(tool_call.name, tool_call.arguments)
 
-      # Send the tool result back to the model
+      
       conversation_history.append({
           "type": "function_call_output",
           "call_id": tool_call.call_id,
@@ -269,12 +305,12 @@ def search_files(path: str, pattern: str, file_pattern: str = None) -> str:
         if not file_path.is_file():
             continue
 
-        # Skip noise
+       
         if any(part in ['node_modules', '__pycache__', '.git', 'venv']
                for part in file_path.parts):
             continue
 
-        # Filter by file pattern if specified
+       
         if file_pattern and not fnmatch.fnmatch(file_path.name, file_pattern):
             continue
 
@@ -282,7 +318,7 @@ def search_files(path: str, pattern: str, file_pattern: str = None) -> str:
             with open(file_path, 'r') as f:
                 for i, line in enumerate(f, 1):
                     if pattern.lower() in line.lower():
-                        display = line.rstrip()[:200]  # Truncate long lines
+                        display = line.rstrip()[:200]  
                         results.append(f"{file_path}:{i}: {display}")
                         if len(results) >= 50:
                             return '\n'.join(results) + "\n... (limited to 50 results)"
