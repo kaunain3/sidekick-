@@ -1,3 +1,6 @@
+import ast
+
+
 BLOCKED_MODULES = {
     "os", "subprocess", "sys", "shutil",
     "socket", "requests", "urllib",
@@ -35,3 +38,19 @@ class SafetyValidator(ast.NodeVisitor):
             if node.func.id in BLOCKED_BUILTINS:
                 self.errors.append(f"Blocked function: '{node.func.id}()'")
         self.generic_visit(node)
+
+
+def validate_code(code: str) -> tuple[bool, list[str]]:
+    """Parse and statically check code for blocked imports/builtins.
+
+    Returns (is_safe, errors). is_safe is False on a syntax error or
+    if any blocked import/builtin is used.
+    """
+    try:
+        tree = ast.parse(code)
+    except SyntaxError as e:
+        return False, [f"Syntax error: {e}"]
+
+    validator = SafetyValidator()
+    validator.visit(tree)
+    return len(validator.errors) == 0, validator.errors
